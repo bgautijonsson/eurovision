@@ -16,3 +16,5 @@ Imports:
 Depends: 
     R (>= 2.10)
 LazyData: true
+URL: https://github.com/bgautijonsson/eurovision
+BugReports: https://github.com/bgautijonsson/eurovision/issues
