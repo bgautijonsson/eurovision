@@ -1,0 +1,96 @@
+---
+title: "Plot 1"
+format: html
+---
+
+```{r}
+devtools::load_all()
+library(tidyverse)
+library(metill)
+theme_set(theme_metill())
+```
+
+
+```{r}
+d <- points |> 
+    filter(round == "final", year >= 2000) |> 
+    count(from, to, wt = points, name = "points") |> 
+    mutate(
+        p = points / sum(points),
+        .by = to
+    ) 
+```
+
+
+```{r}
+plot_dat <- d |> 
+    filter(
+        to == "Iceland"
+    ) |> 
+    inner_join(
+        country_names(),
+        by = join_by(from == country)
+    ) |> 
+    mutate(
+        land = fct_reorder(land, p) |> 
+            fct_drop()
+    ) 
+```
+
+```{r}
+p <- plot_dat |> 
+    ggplot(aes(p, land)) +
+    geom_segment(
+        aes(xend = 0, yend = land),
+        alpha = 0.5,
+        lty = 2,
+        linewidth = 0.3
+    ) +
+    geom_point() +
+    annotate(
+        geom = "text",
+        x = 0.095,
+        y = 38,
+        label = str_c(
+            "11,2% allra stiga okkar\nkomu frá Noregi"
+        ),
+        family = "Lato",
+        color = "grey40"
+    ) +
+    annotate(
+        geom = "curve",
+        x = 0.108, xend = 0.1124,
+        y = 37.7, yend = 39.8,
+        curvature = 1,
+        angle = 90,
+        linewidth = 0.4,
+        arrow = arrow(length = unit(8, "point")),
+        color = "grey40"
+    ) +
+    scale_x_tufte(
+        breaks = tufte_breaks(plot_dat$p),
+        labels = label_hlutf(),
+        limits = c(0, 0.12),
+        expand = expansion()
+    ) +
+    theme(
+        axis.ticks.y = element_line(color = "grey40"),
+        plot.subtitle = element_text(size = 12)
+    ) +
+    labs(
+        title = "Hvaðan fær Ísland flest stig í Eurovision?",
+        subtitle = "Hlutfall af öllum stigum sem við fengum í úrslitakeppnum á árunum 2000 til 2019",
+        x = NULL,
+        y = NULL,
+        caption = "Gögn: https://github.com/Spijkervet/eurovision-dataset"
+    ) 
+
+
+
+ggsave(
+    plot = p,
+    filename = "stig_island.png",
+    width = 8, height =  8, scale = 1
+)
+```
+
