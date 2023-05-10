@@ -11,11 +11,110 @@ library(ggtext)
 theme_set(theme_metill())
 ```
 
+```{r}
+plot_dat <- points |> 
+    filter(year >= 2000) |> 
+    filter(
+        from == "Iceland",
+        round == "final"
+    ) |> 
+    drop_na(
+        tele_points
+    ) |> 
+    mutate(
+        jury_points = coalesce(jury_points, 0),
+        diff = jury_points - tele_points
+    ) |> 
+    summarise(
+        diff = sum(diff),
+        jury_points = sum(jury_points),
+        tele_points = sum(tele_points),
+        .by = to
+    ) |> 
+    inner_join(
+        country_names() |> 
+            add_row(country = "Azerbaijan", land = "Aserbaísjan"),
+        by = join_by(to == country)
+    ) |> 
+    mutate(
+        land = fct_reorder(land, diff)
+    ) 
+
+p <- plot_dat |> 
+    ggplot(aes(diff, land)) +
+    geom_vline(
+        xintercept = 0,
+        lty = 2,
+        alpha = 0.4,
+        linewidth = 0.4
+    ) +
+    geom_segment(
+        aes(xend = 0, yend = land),
+        alpha = 0.4,
+        linewidth = 0.3
+    ) +
+    geom_point(
+        size = 2.5
+    ) +
+    geom_richtext(
+        data = tibble(x = 1),
+        inherit.aes = FALSE,
+        x = -15,
+        y = -1.5,
+        label.colour = NA,
+        fill = NA,
+        label = "&larr; **Áhorfendur** gefa fleiri stig",
+        hjust = 0,
+        size = 4,
+        colour = "grey40"
+    ) +
+    geom_richtext(
+        data = tibble(x = 1),
+        inherit.aes = FALSE,
+        x = 8, 
+        y = -1.5, 
+        label.colour = NA,
+        fill = NA,
+        label = "**Dómnefnd** gefur fleiri stig &rarr;", 
+        hjust = 1,
+        size = 4,
+        colour = "grey40"
+    ) +
+    scale_x_tufte(
+        breaks = tufte_breaks(plot_dat$diff)
+    ) +
+    coord_cartesian(
+        clip = "off"
+    ) +
+    theme(
+        legend.position = "none",
+        plot.subtitle = element_markdown(size = 12, margin = margin(b = 10)),
+        plot.margin = margin(t = 5, r = 15, b = 5, l = 5)
+    ) +
+    labs(
+        x = NULL,
+        y = NULL,
+        title = "Eru íslenskir áhorfendur sammála dómnefndinni?",
+        subtitle = "Samanburður á öllum löndum sem við höfum gefið stig í úrslitakeppnum 2019 - 2022",
+        caption = "\n\nGögn: https://www.github.com/Spijkervet/eurovision-dataset"
+    )
+
+
+ggsave(
+    plot = p,
+    filename = "points_comp.png",
+    width = 8, height = 0.9 * 8, scale = 1
+)
+```
+
 
 ```{r}
 d <- points |> 
     filter(round == "final", year >= 2000) |> 
-    count(from, to, wt = points, name = "points") |> 
+    summarise(
+        points = sum(tele_points, na.rm = T),
+        .by = c(from, to)
+    ) |> 
     mutate(
         p = points / sum(points),
         .by = to
